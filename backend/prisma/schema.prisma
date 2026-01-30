@@ -12,3 +12,79 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  RECEIVED
+  IN_PROGRESS
+  COMPLETED
+  SHIPPED
+}
+
+enum BannerTier {
+  BASIC
+  STANDARD
+  PREMIUM
+  MINI
+}
+
+model User {
+
+  id  String @id @default(uuid())
+  email String @unique
+  password String
+  role Role @default(USER)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BannerOption {
+
+  id String @id @default(uuid())
+  tier BannerTier
+  widthFt Int
+  heightFt Int
+  basePrice Int
+  description String
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+}
+
+model AddOn {
+  id String @id @default(uuid())
+  name String
+  price Int
+  orders Order[] @relation("OrderAddOns")
+
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id String @id @default(uuid())
+
+  customerEmail String
+
+  userId String?
+  user User? @relation(fields: [userId], references: [id])
+
+  bannerOptionId String
+  bannerOption BannerOption @relation(fields:[bannerOptionId], references: [id])
+
+  addOns AddOn[] @relation("OrderAddOns")
+
+  notes String?
+  status OrderStatus @default(RECEIVED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
