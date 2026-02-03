@@ -22,7 +22,8 @@ enum OrderStatus {
   RECEIVED
   IN_PROGRESS
   COMPLETED
-  SHIPPED
+  DELIVERED
+  CANCELLED
 }
 
 enum BannerTier {
