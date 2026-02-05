@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import bannerOptionRoutes from "./routes/bannerOptionRoutes";
 import addOnsRoutes from "./routes/addOnsRoutes";
 import orderRoutes from "./routes/orderRoutes";
+import authRoutes from "./routes/authRoutes";
 
 const app = express();
 
@@ -25,7 +26,7 @@ app.use("/api/banner-options", bannerOptionRoutes);
 app.use("/api/add-ons", addOnsRoutes);
 app.use("/api/orders", orderRoutes);
 
-
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 4000;
 
