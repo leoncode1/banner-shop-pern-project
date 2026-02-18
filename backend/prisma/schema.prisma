@@ -72,19 +72,19 @@ model AddOn {
 
 model Order {
   id String @id @default(uuid())
-
-  customerEmail String
-
-  userId String?
-  user User? @relation(fields: [userId], references: [id])
+  notes String?
+  status OrderStatus @default(RECEIVED)
 
   bannerOptionId String
   bannerOption BannerOption @relation(fields:[bannerOptionId], references: [id])
 
   addOns AddOn[] @relation("OrderAddOns")
 
-  notes String?
-  status OrderStatus @default(RECEIVED)
+  //Ownership
+  userId String?
+  user User? @relation(fields: [userId], references: [id])
+
+  guestEmail String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

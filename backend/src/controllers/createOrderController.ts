@@ -9,18 +9,49 @@ export const createOrder = async (req: Request, res: Response) => {
     try{
         // User input passed into those fields.
         const { 
-            customerEmail,
             bannerOptionId,
             addOnIds,
-            notes 
+            notes,
+            guestEmail 
         } = req.body;
 
-        // Email validation
-        if (!customerEmail || typeof customerEmail !== "string" || !isValidEmail(customerEmail)){
-            return res.status(400).json({
-                message: "Valid email is required."
-            });
+        const data: any = {
+            bannerOptionId,
+            notes
+        };
+
+        if (req.user){
+            data.userId = req.user.userId;
         }
+        else{
+            if(!guestEmail){
+                return res.status(400).json({
+                    message: "Email is REQUIRED for Guest Checkout."
+                });
+            }
+
+            if(!isValidEmail(guestEmail)){
+                return res.status(400).json({
+                    message: "Invalid email format."
+                });
+            }
+
+            const existingUser = await prisma.user.findUnique({
+                where: {
+                    email: guestEmail
+                }
+            });
+
+            if (existingUser){
+                return res.status(409).json({
+                    message: "An account exists with this email. Please log in."
+                });
+            }
+
+            data.guestEmail = guestEmail;
+        }
+
+        
 
         // Banner option validation
         if (!bannerOptionId || typeof bannerOptionId !== "string"){
@@ -63,12 +94,6 @@ export const createOrder = async (req: Request, res: Response) => {
 
             // IDs will be verified and connected with data in the DB.
             validAddOns = foundAddOns.map(a => ({id: a.id}));
-        };
-
-        const data: any = {
-            customerEmail,
-            bannerOptionId,
-            notes
         };
         
         // Checks if addOns length is > 0.
@@ -121,45 +146,76 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     }
 };
 
-export const getOrderByEmail = async (req: Request, res: Response) => {
-    console.log("REQ QUERY:", req.query);
-    console.log("RAW URL:", req.originalUrl);
+// export const getOrderByEmail = async (req: Request, res: Response) => {
+//     console.log("REQ QUERY:", req.query);
+//     console.log("RAW URL:", req.originalUrl);
 
+//     try{
+
+//         const {email} = req.query;
+
+//         if (!email || typeof email !== "string"){
+//             return res.status(400).json({message: "Email query parameter is required."});
+//         }
+
+//         const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+//         if (!isValidEmail){
+//             return res.status(400).json({
+//                 message: "Invalid email format."
+//             })
+//         }
+
+//         // findMany returns arrays.
+//         const orders = await prisma.order.findMany({
+//             where: {
+//                 customerEmail: email
+//             },
+//             include: {
+//                 bannerOption: true,
+//                 addOns: true
+//             },
+//             orderBy: {
+//                 // Newest orders first.
+//                 createdAt: "desc"
+//             }
+//         });
+
+//         return res.status(200).json(orders);
+
+//     } catch(error){
+//         console.error("Get orders by emails erros:", error);
+//         return res.status(500).json({message: "Internal server error."});
+//     }
+// }
+
+export const getMyOrders = async (req: Request, res: Response) => {
     try{
 
-        const {email} = req.query;
-
-        if (!email || typeof email !== "string"){
-            return res.status(400).json({message: "Email query parameter is required."});
+        if(!req.user){
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
         }
 
-        const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        if (!isValidEmail){
-            return res.status(400).json({
-                message: "Invalid email format."
-            })
-        }
-
-        // findMany returns arrays.
         const orders = await prisma.order.findMany({
             where: {
-                customerEmail: email
+                userId: req.user.userId
             },
             include: {
                 bannerOption: true,
                 addOns: true
             },
             orderBy: {
-                // Newest orders first.
                 createdAt: "desc"
             }
         });
 
         return res.status(200).json(orders);
 
-    } catch(error){
-        console.error("Get orders by emails erros:", error);
-        return res.status(500).json({message: "Internal server error."});
+    }catch(error){
+        return res.status(500).json({
+            message: "Failed to fetch orders."
+        });
     }
 }
 
