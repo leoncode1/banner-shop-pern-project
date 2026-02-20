@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import crypto from "crypto";
 
 const isValidEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -48,10 +49,13 @@ export const createOrder = async (req: Request, res: Response) => {
                 });
             }
 
-            data.guestEmail = guestEmail;
-        }
-
+            // Create lookup token
+            const lookupToken = crypto.randomBytes(16).toString("hex");
         
+            data.guestEmail = guestEmail;
+            // Add lookup token to data
+            data.guestLookupToken = lookupToken;
+        }
 
         // Banner option validation
         if (!bannerOptionId || typeof bannerOptionId !== "string"){
@@ -146,48 +150,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     }
 };
 
-// export const getOrderByEmail = async (req: Request, res: Response) => {
-//     console.log("REQ QUERY:", req.query);
-//     console.log("RAW URL:", req.originalUrl);
-
-//     try{
-
-//         const {email} = req.query;
-
-//         if (!email || typeof email !== "string"){
-//             return res.status(400).json({message: "Email query parameter is required."});
-//         }
-
-//         const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-//         if (!isValidEmail){
-//             return res.status(400).json({
-//                 message: "Invalid email format."
-//             })
-//         }
-
-//         // findMany returns arrays.
-//         const orders = await prisma.order.findMany({
-//             where: {
-//                 customerEmail: email
-//             },
-//             include: {
-//                 bannerOption: true,
-//                 addOns: true
-//             },
-//             orderBy: {
-//                 // Newest orders first.
-//                 createdAt: "desc"
-//             }
-//         });
-
-//         return res.status(200).json(orders);
-
-//     } catch(error){
-//         console.error("Get orders by emails erros:", error);
-//         return res.status(500).json({message: "Internal server error."});
-//     }
-// }
-
 export const getMyOrders = async (req: Request, res: Response) => {
     try{
 
@@ -244,5 +206,44 @@ export const getOrderById = async (req: Request, res: Response) => {
     } catch (error){
         console.error();
         return res.status(500).json("Internal Server error.");
+    }
+}
+
+export const guestOrderLookup = async(req: Request, res: Response) => {
+
+    try{
+
+        const {orderNumber, token} = req.query;
+
+        const parsedOrderNumber = Number(orderNumber);
+
+        if(!parsedOrderNumber || isNaN(parsedOrderNumber)){
+            return res.status(400).json({message: "Valid orderNumber is required."});
+        }
+
+        if(!token || typeof token !== "string"){
+            return res.status(400).json({message: "Lookup token is required."});
+        }
+
+        const order = await prisma.order.findUnique({
+        where: { orderNumber: parsedOrderNumber },
+        include: {
+            bannerOption: true,
+            addOns: true
+        }
+        });
+
+        if (!order || order.guestLookupToken !== token) {
+        return res.status(403).json({
+            message: "Invalid tracking link."
+        });
+        }
+
+        return res.status(200).json(order);
+
+    } catch(error){
+        return res.status(500).json({
+        message: "Failed to lookup order."
+        });
     }
 }

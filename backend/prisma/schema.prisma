@@ -72,6 +72,10 @@ model AddOn {
 
 model Order {
   id String @id @default(uuid())
+  orderNumber Int @unique @default(autoincrement())
+
+  guestLookupToken String? @unique
+
   notes String?
   status OrderStatus @default(RECEIVED)
 
