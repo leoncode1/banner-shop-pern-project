@@ -14,7 +14,8 @@ export async function fetchAddOns() {
 
 
 export async function createOrder(orderData: {
-  customerEmail: string;
+  // Change customerEmail to guestEmail?
+  guestEmail?: string;
   bannerOptionId: string;
   addOnIds?: string[];
   notes?: string;

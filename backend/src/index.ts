@@ -5,6 +5,8 @@ import bannerOptionRoutes from "./routes/bannerOptionRoutes";
 import addOnsRoutes from "./routes/addOnsRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import authRoutes from "./routes/authRoutes";
+import adminRoutes from "./routes/adminRoutes";
+
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.get("/health", (req, res) => {
 app.use("/api/banner-options", bannerOptionRoutes);
 app.use("/api/add-ons", addOnsRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/admin", adminRoutes);
+
 
 app.use("/api/auth", authRoutes);
 

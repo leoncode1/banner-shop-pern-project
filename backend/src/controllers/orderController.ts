@@ -247,3 +247,68 @@ export const guestOrderLookup = async(req: Request, res: Response) => {
         });
     }
 }
+
+export const getAllOrdersAdmin = async(req: Request, res: Response) => {
+
+    try{
+        const { 
+            page = "1",
+            limit = "10",
+            status,
+            sort = "desc"
+        } = req.query;
+
+        // Ensure page & limit are numbers
+        const parsedPage = Number(page);
+        const parsedLimit = Number(limit);
+
+        // Page validation
+        if (isNaN(parsedPage) || parsedPage < 1) {
+            return res.status(400).json({ message: "Invalid page number." });
+        }
+
+        // Limit validation
+        if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
+            return res.status(400).json({ message: "Invalid limit value." });
+        }
+
+        const skip = (parsedPage - 1) * parsedLimit;
+
+        const whereClause: any = {};
+
+        if(status && typeof status == "string"){
+            whereClause.status = status;
+        }
+
+        const orders = await prisma.order.findMany({
+            where: whereClause,
+            skip,
+            take: parsedLimit,
+            orderBy: {
+                createdAt: sort === "asc" ? "asc" : "desc"
+            },
+            include: {
+                bannerOption: true,
+                addOns: true,
+                user: true
+            }
+        });
+
+        const totalOrders = await prisma.order.count({
+            where: whereClause
+        });
+
+        return res.status(200).json({
+            currentPage: parsedPage,
+            totalPage: Math.ceil(totalOrders / parsedLimit),
+            totalOrders,
+            orders
+        });
+    }
+    catch(error){
+        console.error(error);
+        return res.status(500).json({
+            message: "Failed to fetch orders for Admin."
+        });
+    }
+}
