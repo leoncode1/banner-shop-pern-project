@@ -6,9 +6,12 @@ import addOnsRoutes from "./routes/addOnsRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import authRoutes from "./routes/authRoutes";
 import adminRoutes from "./routes/adminRoutes";
-
+import cookieParser from "cookie-parser";
 
 const app = express();
+
+// added for parsing Cookies
+app.use(cookieParser());
 
 // middleware
 app.use(

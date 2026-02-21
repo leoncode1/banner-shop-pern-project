@@ -40,7 +40,10 @@ model User {
   password String
   role Role @default(USER)
 
+  // Relationships
+  // User has MANY orders and refresh tokens
   orders Order[]
+  refreshTokens RefreshToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -92,4 +95,15 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model RefreshToken{
+  id String @id @default(uuid())
+  tokenHash String
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
