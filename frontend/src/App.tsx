@@ -140,16 +140,25 @@
 // }
 
 import {Routes, Route, Link} from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import OrderForm from "./components/OrderForm";
 import Login from "./pages/Login";
 
 function App(){
+
+  const {isAuthenticated, logout} = useAuth();
+
   return (
     <div style={{ padding: 20 }}>
       <nav style={{ marginBottom: 20 }}>
         <Link to="/">Home</Link> |{" "}
         <Link to="/order">Place Order</Link> |{" "}
-        <Link to="/login">Login</Link>
+
+        {!isAuthenticated ? (
+          <Link to="/login">Login</Link>
+        ) : (
+          <button onClick={logout}>Logout</button>
+        )}
       </nav>
 
       <Routes>

@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { login } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
 
+  const {setAuthenticated} = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,26 +17,12 @@ const Login = () => {
     try {
       setIsSubmitting(true);
 
-      const res = await fetch("http://localhost:4000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email, password })
-      });
-
-      if (!res.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      const data = await res.json();
-
-      // Save token
-      localStorage.setItem("token", data.token);
+      await login(email, password);
+      setAuthenticated(true);
 
       navigate("/");
 
-    } catch (error) {
+    } catch {
       alert("Login failed.");
     } finally {
       setIsSubmitting(false);

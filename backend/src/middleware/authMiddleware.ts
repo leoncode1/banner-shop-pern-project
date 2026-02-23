@@ -2,10 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 // Hard-assert env variable at load time
-const JWT_SECRET = process.env.JWT_SECRET!;
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined");
+if (!ACCESS_TOKEN_SECRET) {
+  throw new Error("ACCESS_TOKEN_SECRET is not defined");
 }
 
 // Extend Express Request
@@ -19,38 +19,55 @@ declare global {
     }
   }
 }
-
+// Removed blind casting
 export const authenticate = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    // No longer read from authorization header
+    const token = req.cookies.accessToken;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Unauthorized" });
+    if (!token) {
+      return res.status(401).json({message: "Unauthorized."});
     }
 
-    const token = authHeader.split(" ")[1]!; // assert non-null
+    try{
+      const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+      if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      !("userId" in decoded) ||
+      !("role" in decoded)
+      ) {
+        return res.status(401).json({ message: "Invalid token payload" });
+      }
 
-    if (typeof decoded !== "object" || decoded === null) {
-      return res.status(401).json({ message: "Invalid token" });
+      req.user = {
+        userId: decoded.userId as string,
+        role: decoded.role as string,
+      };
+
+      next();
+
+    } catch(error){
+      return res.status(401).json({message: "Invalid or expired token"});
     }
+    // const decoded = jwt.verify(token, JWT_SECRET);
+    // if (typeof decoded !== "object" || decoded === null) {
+    //   return res.status(401).json({ message: "Invalid token" });
+    // }
+    // const payload = decoded as JwtPayload & {
+    //   userId: string;
+    //   role: string;
+    // };
+    // req.user = {
+    //   userId: payload.userId,
+    //   role: payload.role,
+    // };
 
-    const payload = decoded as JwtPayload & {
-      userId: string;
-      role: string;
-    };
-
-    req.user = {
-      userId: payload.userId,
-      role: payload.role,
-    };
-
-    next();
   } catch {
     return res.status(401).json({
       message: "Invalid or expired token",
@@ -58,35 +75,56 @@ export const authenticate = (
   }
 };
 
+// Look at this for refresh token soon
 export const optionalAuthenticate = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    // const authHeader = req.headers.authorization;
+    const token = req.cookies.accessToken;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return next(); // allow guest
+    if(!token){
+      return next(); // No cookie = guest
     }
 
-    const token = authHeader.split(" ")[1]!;
+    try{
+      const decoded =jwt.verify(token, ACCESS_TOKEN_SECRET);
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+      if(
+        typeof decoded !== "object" || decoded === null ||
+        !("userId" in decoded) || !("role" in decoded)  
+      ){
+        return next();
+      }
 
-    if (typeof decoded !== "object" || decoded === null) {
-      return next();
+        req.user = {
+          userId: decoded.userId as string,
+          role: decoded.role as string,
+        };
+
+    }catch(error){
+      // Ignore invalid token
     }
 
-    const payload = decoded as JwtPayload & {
-      userId: string;
-      role: string;
-    };
+    next();
 
-    req.user = {
-      userId: payload.userId,
-      role: payload.role,
-    };
+    // const decoded = jwt.verify(token, JWT_SECRET);
+
+    // if (typeof decoded !== "object" || decoded === null) {
+    //   return next();
+    // }
+
+    // const payload = decoded as JwtPayload & {
+    //   userId: string;
+    //   role: string;
+    // };
+
+    // req.user = {
+    //   userId: payload.userId,
+    //   role: payload.role,
+    // };
 
   } catch {
     // Ignore invalid token for optional auth
