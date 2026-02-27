@@ -55,19 +55,6 @@ export const authenticate = (
     } catch(error){
       return res.status(401).json({message: "Invalid or expired token"});
     }
-    // const decoded = jwt.verify(token, JWT_SECRET);
-    // if (typeof decoded !== "object" || decoded === null) {
-    //   return res.status(401).json({ message: "Invalid token" });
-    // }
-    // const payload = decoded as JwtPayload & {
-    //   userId: string;
-    //   role: string;
-    // };
-    // req.user = {
-    //   userId: payload.userId,
-    //   role: payload.role,
-    // };
-
   } catch {
     return res.status(401).json({
       message: "Invalid or expired token",
@@ -109,26 +96,8 @@ export const optionalAuthenticate = (
     }
 
     next();
-
-    // const decoded = jwt.verify(token, JWT_SECRET);
-
-    // if (typeof decoded !== "object" || decoded === null) {
-    //   return next();
-    // }
-
-    // const payload = decoded as JwtPayload & {
-    //   userId: string;
-    //   role: string;
-    // };
-
-    // req.user = {
-    //   userId: payload.userId,
-    //   role: payload.role,
-    // };
-
   } catch {
     // Ignore invalid token for optional auth
   }
-
-  next();
+  // Remove next();
 };

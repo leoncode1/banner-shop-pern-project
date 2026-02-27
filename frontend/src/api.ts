@@ -43,15 +43,43 @@ const API_BASE_URL = "http://localhost:5001/api";
 
 async function apiFetch(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retry = true
 ) {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // Changed const to let
+  let res = await fetch(`${API_BASE_URL}${endpoint}`, {
     credentials: "include", // Required for Cookies
     headers: {
       "Content-Type": "application/json",
       ...options.headers
-    }
+    },
+    // Added so POST does not become GET
+    ...options
   });
+  //-------------------------------
+  // Added for NO refreshing on /auth/me
+  if(
+    res.status === 401 &&
+    retry &&
+    !endpoint.startsWith("/auth/")
+  ){
+    try{
+      // Attempt refresh
+      const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`,{
+        method: "POST",
+        credentials: "include"
+      });
+
+      if (!refreshRes.ok){
+        throw new Error("Refresh failed.");
+      }
+
+      //Retry original request ONCE
+      return apiFetch(endpoint, options, false);
+    } catch{
+      throw new Error("Session expired.");
+    }
+  }
 
   if(!res.ok){
     throw new Error("API request failed.");
@@ -105,6 +133,38 @@ export async function logout() {
 
   if (!res.ok) {
     throw new Error("Logout failed");
+  }
+
+  return res.json();
+}
+
+// Added for session persistence
+export async function getMe(){
+  const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    credentials: "include"
+  });
+
+  // Stop console error
+  if(res.status === 401){
+    return null; // not logged in
+  }
+
+  if (!res.ok){
+    throw new Error("Failed to fetch user.");
+  }
+
+  return res.json();
+}
+
+// Added for silent refresh for accessToken expiry
+export async function refreshSession(){
+  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include"
+  });
+
+  if (!res.ok){
+    throw new Error("Refresh failed");
   }
 
   return res.json();

@@ -18,6 +18,8 @@ const Login = () => {
       setIsSubmitting(true);
 
       await login(email, password);
+      // Removed setAuthenticated(true);
+
       setAuthenticated(true);
 
       navigate("/");

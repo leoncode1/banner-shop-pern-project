@@ -7,6 +7,8 @@ const isValidEmail = (email: string): boolean => {
 }
 
 export const createOrder = async (req: Request, res: Response) => {
+    console.log("CREATE ORDER HIT");
+    console.log("REQ.USER:", req.user);
     try{
         // User input passed into those fields.
         const { 

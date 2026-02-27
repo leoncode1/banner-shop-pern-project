@@ -140,16 +140,19 @@ export const refresh = async(req: Request, res: Response) => {
         ){
             return res.status(403).json({message: "Invalid refresh token."});
         }
+        console.log("Refresh token received:", token);
 
         const userId = decoded.userId as string;
 
         // Hash the refreshToken that was passed in
         const hashed = hashToken(token);
+        console.log("Hashed:", hashed);
 
         // Check is hashed token exists in DB
         const storedToken = await prisma.refreshToken.findFirst({
             where: {tokenHash: hashed}
         });
+        console.log("Stored token found:", storedToken);
 
         // If passed in hashed refresh token is not found,
         // return 403.
@@ -180,12 +183,11 @@ export const refresh = async(req: Request, res: Response) => {
 
         // Hash new refresh token.
         const newHashed = hashToken(newRefreshToken);
-
         // Store it in DB
         await prisma.refreshToken.create({
             data: {
                 tokenHash: newHashed,
-                userId: decoded.userId,
+                userId: user.id, // Instead of decoded.userId
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             }
         });
@@ -207,7 +209,7 @@ export const refresh = async(req: Request, res: Response) => {
         });
 
         return res.json({message: "Token refreshed."});
-
+        
     } catch(error){
         return res.status(403).json({message: "Invalid refresh token."});
     }
@@ -233,3 +235,9 @@ export const logout = async (req: Request, res: Response) => {
         return res.status(500).json({message:"Logout failed."});
     }
 };
+
+export const me = async(req: Request, res: Response) => {
+    return res.json({
+        user: req.user
+    })
+}
